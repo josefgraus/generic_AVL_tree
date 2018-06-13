@@ -167,7 +167,7 @@ namespace bst {
 					}
 				} else {
 					// This node is the root!
-					_root == rep;
+					_root = rep;
 				}
 
 				if (rep != nullptr) {

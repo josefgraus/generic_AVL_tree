@@ -18,7 +18,7 @@ std::function<bool(const double&, const double&)> equal = [](const double& a, co
 int main(void) {
 	gAVL<double> tree(less_than, equal);
 
-	int k = 12;
+	int k = 5;
 
 	std::random_device rd;  
 	std::mt19937 gen(rd()); 
@@ -52,7 +52,7 @@ int main(void) {
 	std::cout << "Actual Height: " << tree.height() << std::endl;
 	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
 
-	//assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
+	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
 	std::cout << "Remove first random 3/4 -- New In-order traversal, left to right: " << std::endl;
 	int m = static_cast<int>(std::floor(static_cast<double>(n) * 0.75));
