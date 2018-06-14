@@ -159,6 +159,32 @@ int main(void) {
 }
 ```
 
+**Sample Output (k == 4):**
+
+```
+Random doubles in [0.0, 100.0]:
+33.8156   21.1138   10.8605   77.2004   32.5539   5.28233   4.95022   37.3096   21.3451   7.80798   61.3107   55.2277   94.3374   26.1977   66.7322
+
+In-order traversal, left to right:
+4.95022   5.28233   7.80798   10.8605   21.1138   21.3451   26.1977   32.5539   33.8156   37.3096   55.2277   61.3107   66.7322   77.2004   94.3374
+ Bound Height: 5
+Actual Height: 5
+         Size: 15
+
+Remove first 1/2 -- New In-order traversal, left to right:
+7.80798   21.3451   26.1977   37.3096   55.2277   61.3107   66.7322   94.3374
+   Max Height: 4
+Actual Height: 4
+         Size: 8
+
+Re-add the entire set -- New In-order traversal, left to right:
+*Note that tree does not insert values that already exist in the tree*
+4.95022   5.28233   7.80798   10.8605   21.1138   21.3451   26.1977   32.5539   33.8156   37.3096   55.2277   61.3107   66.7322   77.2004   94.3374
+   Max Height: 5
+Actual Height: 5
+         Size: 15
+```
+
 **Note:** A Visual Studio 2017 solution file is included in the repository. However, the code should be portable to any other toolchain adequately supporting C++11 (famous last words..)
 
 ## Feedback
