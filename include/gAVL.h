@@ -5,6 +5,7 @@
 #include <functional>
 #include <vector>
 #include <stack>
+#include <queue>
 
 namespace bst {
 	template <typename T>
@@ -38,6 +39,8 @@ namespace bst {
 
 		std::vector<T> to_stl_vector();
 
+		void debug_print();
+
 		protected:
 			std::shared_ptr<gAVLNode<T>> find(const T& data);
 			void retrace_insert(std::shared_ptr<gAVLNode<T>> node);
@@ -51,7 +54,57 @@ namespace bst {
 			std::function<bool(const T&, const T&)> _equal;
 			std::shared_ptr<gAVLNode<T>> _root;
 			std::size_t _size;
+
+			std::shared_ptr<gAVLNode<T>> _debug;
 	};
+
+	template <typename T>
+	void gAVL<T>::debug_print() {
+		std::queue<std::pair<std::shared_ptr<gAVLNode<T>>, int>> q;
+
+		if (_root != nullptr) {
+			q.push(std::pair<std::shared_ptr<gAVLNode<T>>, int>(_root,1));
+		}
+
+		int i = 1;
+		std::cout << "---- gAVL tree ----" << std::endl;
+		std::cout << std::endl << i << ":    ";
+		
+		while (!q.empty()) {
+			std::shared_ptr<gAVLNode<T>> p = q.front().first;
+
+			if (i != q.front().second) {
+				i = q.front().second;
+				std::cout << std::endl << i << ":    ";
+			}
+
+			if (p->_parent != nullptr) {
+				std::cout << "( " << p->_data << ", " << p->_balance_factor << " ) [" << p->_parent->_data << "]     ";
+			} else {
+				std::cout << "( " << p->_data << ", " << p->_balance_factor << " ) [r]     ";
+			}
+
+			if (p->_left != nullptr) {
+				q.push(std::pair<std::shared_ptr<gAVLNode<T>>, int>(p->_left, i + 1));
+			}
+
+			if (p->_right != nullptr) {
+				q.push(std::pair<std::shared_ptr<gAVLNode<T>>, int>(p->_right, i + 1));
+			}
+
+			assert(p->_balance_factor <= 1 && p->_balance_factor >= -1);
+
+			if (p->_left == nullptr && p->_right != nullptr) {
+				assert(p->_balance_factor == 1);
+			} else if (p->_left != nullptr && p->_right == nullptr) {
+				assert(p->_balance_factor == -1);
+			}
+
+			q.pop();
+		}
+
+		std::cout << std::endl << std::endl;
+	}
 
 	template <typename T>
 	gAVL<T>::gAVL(std::function<bool(const T&, const T&)> less_than, std::function<bool(const T&, const T&)> equal): _less_than(less_than), _equal(equal) {
@@ -127,7 +180,17 @@ namespace bst {
 
 		retrace_insert(node);
 
+		if (node->_left == nullptr && node->_right != nullptr) {
+			assert(node->_balance_factor == 1);
+		} else if (node->_left != nullptr && node->_right == nullptr) {
+			assert(node->_balance_factor == -1);
+		}
+
 		_size++;
+
+		if (equal(node->_data, 10.0)) {
+			_debug = node;
+		}
 
 		return;
 	}
@@ -171,9 +234,10 @@ namespace bst {
 				}
 
 				if (rep != nullptr) {
-					rep->_parent = q->_parent;
-					retrace_remove(rep);
-				} else if (q->_parent != nullptr) {
+					rep->_parent = q->_parent;	
+				}
+
+				if (q->_parent != nullptr) {
 					retrace_remove(q->_parent);
 				}
 
@@ -488,8 +552,8 @@ namespace bst {
 
 		// 1st case, BalanceFactor(Z) == 0, only happens with deletion, not insertion:
 		if (Z->_balance_factor == 0) { // t23 has been of same height as t4
-			X->_balance_factor = +1;   // t23 now higher
-			Z->_balance_factor = -1;   // t4 now lower than X
+			X->_balance_factor = -1;   // t23 now higher
+			Z->_balance_factor = +1;   // t4 now lower than X
 		} else { // 2nd case happens with insertion or deletion:
 			X->_balance_factor = 0;
 			Z->_balance_factor = 0;
@@ -623,8 +687,8 @@ namespace bst {
 		X->_parent = Y;
 
 		// 1st case, BalanceFactor(Y) > 0, happens with insertion or deletion:
-		if (Y->_balance_factor > 0) { // t3 was higher
-			X->_balance_factor = -1;  // t1 now higher
+		if (Y->_balance_factor < 0) { // t3 was higher
+			X->_balance_factor = +1;  // t1 now higher
 			Z->_balance_factor = 0;
 		} else { // 2nd case, BalanceFactor(Y) == 0, only happens with deletion, not insertion:
 			if (Y->_balance_factor == 0) {
@@ -633,7 +697,7 @@ namespace bst {
 			} else { // 3rd case happens with insertion or deletion:
 					 // t2 was higher
 				X->_balance_factor = 0;
-				Z->_balance_factor = +1;  // t4 now higher
+				Z->_balance_factor = -1;  // t4 now higher
 			}
 		}
 		Y->_balance_factor = 0;
