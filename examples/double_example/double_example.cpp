@@ -65,7 +65,7 @@ int main(void) {
 	std::cout << "Actual Height: " << tree.height() << std::endl;
 	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
 
-	assert(std::get<0>(height_bounds) <= height && height < std::get<1>(height_bounds));
+	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
 	// Remove the first 50% of doubles
 	std::cout << "Remove first 1/2 -- New In-order traversal, left to right: " << std::endl;
@@ -87,7 +87,7 @@ int main(void) {
 	std::cout << "Actual Height: " << tree.height() << std::endl;
 	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
 
-	assert(std::get<0>(height_bounds) <= height && height < std::get<1>(height_bounds));
+	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
 	// Re-add the entire set of doubles randomly generated previously
 	std::cout << "Re-add the entire set -- New In-order traversal, left to right: " << std::endl;
@@ -109,7 +109,7 @@ int main(void) {
 	std::cout << "Actual Height: " << tree.height() << std::endl;
 	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
 
-	assert(std::get<0>(height_bounds) <= height && height < std::get<1>(height_bounds));
+	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
 	system("PAUSE");
 

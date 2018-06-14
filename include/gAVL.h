@@ -21,7 +21,7 @@ namespace bst {
 		int _balance_factor;
 	};
 
-	// A self-balancing binary search tree implementing AVL tree
+	// A self-balancing binary search tree implementing AVL tree -- Space O(n)
 	// https://en.wikipedia.org/wiki/AVL_tree
 	template <typename T>
 	class gAVL {
@@ -29,15 +29,15 @@ namespace bst {
 		gAVL(std::function<int(const T&, const T&)> comparator);
 		~gAVL();
 
-		void insert(const T& data);
-		void remove(const T& data);
-		
-		std::size_t size();
-		int height();
-		std::tuple<int, int> height_bounds();
-		bool contains(const T& data);
+		void insert(const T& data);				// Adds the data value to the tree (if it already exists in the tree, does nothing) [O(log(n)]
+		void remove(const T& data);				// Removes the data value from the tree (if it does not exist in the tree does nothing) [O(log(n))]
 
-		std::vector<T> to_stl_vector();
+		std::size_t size();						// Returns the number of items stored in the tree [O(1)]
+		int height();							// Returns the height of the tree (if you *must* know) [O(n)]
+		std::tuple<int, int> height_bounds();	// Returns the theoretical upper and lower bounds of the AVL tree (O(1))
+		bool contains(const T& data);			// Returns true if the data value is contained in the tree, false otherwise [O(log(n)]
+
+		std::vector<T> to_stl_vector();			// Returns the tree as an ordered vector, with the comparator "least" (negative to all others) value first, and the comparator "most" (positive to all others) last [O(n)]
 
 		protected:
 			std::shared_ptr<gAVLNode<T>> find(const T& data);
@@ -175,6 +175,9 @@ namespace bst {
 				if (rep != nullptr) {
 					rep->_parent = q->_parent;	
 				}
+
+				// purge, in zero ref fashion (don't risk cycles)
+				q->_parent = q->_left = q->_right = nullptr;
 				
 				break;
 
@@ -256,7 +259,7 @@ namespace bst {
 
 		return std::tuple<int, int>(
 			static_cast<int>(std::floor(std::log2(n + 1.0))),
-			static_cast<int>(std::ceil(c * std::log2(n + 2) + b))
+			static_cast<int>(std::ceil(c * std::log2(n + 2) + b)) - 1
 		);
 	}
 
@@ -322,7 +325,7 @@ namespace bst {
 
 	/*
 		What follows is an adaptation of the pseudocode found at: https://en.wikipedia.org/wiki/AVL_tree
-		Or inverted psuedo-code (rotate_right and rotaie_left_right are mirrored copies since they were presumed to be self-evident given the other two on the wiki, so the comments might not make sense)
+		Or inverted psuedo-code (rotate_right and rotate_left_right are mirrored copies since they were presumed to be self-evident given the other two on the wiki, so the comments might not make sense)
 	*/
 
 	template <typename T>
@@ -474,8 +477,8 @@ namespace bst {
 
 		// 1st case, BalanceFactor(Z) == 0, only happens with deletion, not insertion:
 		if (Z->_balance_factor == 0) { // t23 has been of same height as t4
-			X->_balance_factor = -1;   // t23 now higher
-			Z->_balance_factor = +1;   // t4 now lower than X
+			X->_balance_factor = -1;   
+			Z->_balance_factor = +1;   
 		} else { // 2nd case happens with insertion or deletion:
 			X->_balance_factor = 0;
 			Z->_balance_factor = 0;
@@ -577,17 +580,16 @@ namespace bst {
 		X->_parent = Y;
 
 		// 1st case, BalanceFactor(Y) > 0, happens with insertion or deletion:
-		if (Y->_balance_factor < 0) { // t3 was higher
-			X->_balance_factor = +1;  // t1 now higher
+		if (Y->_balance_factor < 0) { 
+			X->_balance_factor = +1;  
 			Z->_balance_factor = 0;
 		} else { // 2nd case, BalanceFactor(Y) == 0, only happens with deletion, not insertion:
 			if (Y->_balance_factor == 0) {
 				X->_balance_factor = 0;
 				Z->_balance_factor = 0;
 			} else { // 3rd case happens with insertion or deletion:
-					 // t2 was higher
 				X->_balance_factor = 0;
-				Z->_balance_factor = -1;  // t4 now higher
+				Z->_balance_factor = -1;  
 			}
 		}
 		Y->_balance_factor = 0;
