@@ -162,4 +162,4 @@ int main(void) {
 **Note:** A Visual Studio 2017 solution file is included in the repository. However, the code should be portable to any other toolchain adequately supporting C++11 (famous last words..)
 
 ## Feedback
-If you encounter any issues, please open an issue (I am keenly interested in bugs)! Also, while I release this code to the public domain, I'd appreciate some feedback as to who found it useful, or who may be forking it for their personal use. It will motivate me to release other packaged work in the future if anyone finds these harried keystrokes useful :)
+If you encounter any issues, please open an issue (I am keenly interested in bugs)! Also, while I release this code to the public-ish domain (MIT License), I'd appreciate some feedback as to who found it useful, or who may be forking it for their personal use. It will motivate me to release other packaged work in the future if anyone finds these harried keystrokes useful :)
