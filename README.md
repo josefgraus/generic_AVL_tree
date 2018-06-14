@@ -6,7 +6,7 @@ I recently learned to never take for granted self-optimizing data structures wri
 
 The only class provided by the header is ```bst::gAVL```:
 
-```
+```cpp
 namespace bst {
 	template <typename T>
 	class gAVL {
@@ -35,11 +35,11 @@ The only necessary component that you must supply is an `int` returning **compar
 
 See `examples/double_example/double_example.cpp` for an example of **gAVL** over an arbitary number of randomly generated doubles in the interval `[0.0, 100.0]`. Usage with any other datatype should be identical besides the definition of the comparator function.
 
-To reverse the order of the sorting in `double_example.cpp`, one simply needs to reverse the sign that the comparator returns, with `+1` for `a < b`, and `-1` for `a > b`.
+**Note:** To reverse the order of the sorting in `double_example.cpp`, one simply needs to reverse the sign that the comparator returns, with `+1` for `a < b`, and `-1` for `a > b`.
 
 **double_example.cpp**
 
-```
+```cpp
 #include <limits>
 #include <random>
 #include <iostream>
