@@ -61,9 +61,9 @@ int main(void) {
 	auto height_bounds = tree.height_bounds();
 
 	// Show respect for theoretical upper and lower tree height bounds
-	std::cout << " Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
-	std::cout << "Actual Height: " << tree.height() << std::endl;
-	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
+	std::cout << " Upper Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
+	std::cout << "      Actual Height: " << tree.height() << std::endl;
+	std::cout << "     Size (# items): " << tree.size() << std::endl << std::endl;
 
 	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
@@ -83,9 +83,9 @@ int main(void) {
 	std::cout << std::endl;
 
 	// Again, respect for upper/lower bounds
-	std::cout << "   Max Height: " << std::get<1>(tree.height_bounds()) << std::endl;
-	std::cout << "Actual Height: " << tree.height() << std::endl;
-	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
+	std::cout << " Upper Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
+	std::cout << "      Actual Height: " << tree.height() << std::endl;
+	std::cout << "     Size (# items): " << tree.size() << std::endl << std::endl;
 
 	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
@@ -105,9 +105,9 @@ int main(void) {
 	std::cout << std::endl;
 
 	// More upper/lower bounds assurances
-	std::cout << "   Max Height: " << std::get<1>(tree.height_bounds()) << std::endl;
-	std::cout << "Actual Height: " << tree.height() << std::endl;
-	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
+	std::cout << " Upper Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
+	std::cout << "      Actual Height: " << tree.height() << std::endl;
+	std::cout << "     Size (# items): " << tree.size() << std::endl << std::endl;
 
 	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 

@@ -103,9 +103,9 @@ int main(void) {
 	auto height_bounds = tree.height_bounds();
 
 	// Show respect for theoretical upper and lower tree height bounds
-	std::cout << " Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
-	std::cout << "Actual Height: " << tree.height() << std::endl;
-	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
+	std::cout << " Upper Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
+	std::cout << "      Actual Height: " << tree.height() << std::endl;
+	std::cout << "     Size (# items): " << tree.size() << std::endl << std::endl;
 
 	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
@@ -125,9 +125,9 @@ int main(void) {
 	std::cout << std::endl;
 
 	// Again, respect for upper/lower bounds
-	std::cout << "   Max Height: " << std::get<1>(tree.height_bounds()) << std::endl;
-	std::cout << "Actual Height: " << tree.height() << std::endl;
-	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
+	std::cout << " Upper Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
+	std::cout << "      Actual Height: " << tree.height() << std::endl;
+	std::cout << "     Size (# items): " << tree.size() << std::endl << std::endl;
 
 	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
@@ -147,9 +147,9 @@ int main(void) {
 	std::cout << std::endl;
 
 	// More upper/lower bounds assurances
-	std::cout << "   Max Height: " << std::get<1>(tree.height_bounds()) << std::endl;
-	std::cout << "Actual Height: " << tree.height() << std::endl;
-	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
+	std::cout << " Upper Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
+	std::cout << "      Actual Height: " << tree.height() << std::endl;
+	std::cout << "     Size (# items): " << tree.size() << std::endl << std::endl;
 
 	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
@@ -163,26 +163,26 @@ int main(void) {
 
 ```
 Random doubles in [0.0, 100.0]:
-33.8156   21.1138   10.8605   77.2004   32.5539   5.28233   4.95022   37.3096   21.3451   7.80798   61.3107   55.2277   94.3374   26.1977   66.7322
+52.2094   69.7192   1.77229   39.958   72.8992   7.60839   4.33905   74.2441   21.1197   76.7509   66.5543   2.42157   21.7146   3.63477   73.2573
 
 In-order traversal, left to right:
-4.95022   5.28233   7.80798   10.8605   21.1138   21.3451   26.1977   32.5539   33.8156   37.3096   55.2277   61.3107   66.7322   77.2004   94.3374
- Bound Height: 5
-Actual Height: 5
-         Size: 15
+1.77229   2.42157   3.63477   4.33905   7.60839   21.1197   21.7146   39.958   52.2094   66.5543   69.7192   72.8992   73.2573   74.2441   76.7509
+ Upper Bound Height: 5
+      Actual Height: 5
+     Size (# items): 15
 
 Remove first 1/2 -- New In-order traversal, left to right:
-7.80798   21.3451   26.1977   37.3096   55.2277   61.3107   66.7322   94.3374
-   Max Height: 4
-Actual Height: 4
-         Size: 8
+2.42157   3.63477   21.1197   21.7146   66.5543   73.2573   74.2441   76.7509
+ Upper Bound Height: 4
+      Actual Height: 4
+     Size (# items): 8
 
 Re-add the entire set -- New In-order traversal, left to right:
 *Note that tree does not insert values that already exist in the tree*
-4.95022   5.28233   7.80798   10.8605   21.1138   21.3451   26.1977   32.5539   33.8156   37.3096   55.2277   61.3107   66.7322   77.2004   94.3374
-   Max Height: 5
-Actual Height: 5
-         Size: 15
+1.77229   2.42157   3.63477   4.33905   7.60839   21.1197   21.7146   39.958   52.2094   66.5543   69.7192   72.8992   73.2573   74.2441   76.7509
+ Upper Bound Height: 5
+      Actual Height: 5
+     Size (# items): 15
 ```
 
 **Note:** A Visual Studio 2017 solution file is included in the repository. However, the code should be portable to any other toolchain adequately supporting C++11 (famous last words..)
