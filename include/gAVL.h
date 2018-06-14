@@ -26,7 +26,7 @@ namespace bst {
 	template <typename T>
 	class gAVL {
 		public:
-		gAVL(std::function<bool(const T&, const T&)> less_than, std::function<bool(const T&, const T&)> equal);
+		gAVL(std::function<int(const T&, const T&)> comparator);
 		~gAVL();
 
 		void insert(const T& data);
@@ -39,8 +39,6 @@ namespace bst {
 
 		std::vector<T> to_stl_vector();
 
-		void debug_print();
-
 		protected:
 			std::shared_ptr<gAVLNode<T>> find(const T& data);
 			void retrace_insert(std::shared_ptr<gAVLNode<T>> node);
@@ -50,64 +48,13 @@ namespace bst {
 			std::shared_ptr<gAVLNode<T>> rotate_right_left(std::shared_ptr<gAVLNode<T>> A, std::shared_ptr<gAVLNode<T>> B);
 			std::shared_ptr<gAVLNode<T>> rotate_left_right(std::shared_ptr<gAVLNode<T>> A, std::shared_ptr<gAVLNode<T>> B);
 
-			std::function<bool(const T&, const T&)> _less_than;
-			std::function<bool(const T&, const T&)> _equal;
+			std::function<int(const T&, const T&)> _comparator;
 			std::shared_ptr<gAVLNode<T>> _root;
 			std::size_t _size;
-
-			std::shared_ptr<gAVLNode<T>> _debug;
 	};
 
 	template <typename T>
-	void gAVL<T>::debug_print() {
-		std::queue<std::pair<std::shared_ptr<gAVLNode<T>>, int>> q;
-
-		if (_root != nullptr) {
-			q.push(std::pair<std::shared_ptr<gAVLNode<T>>, int>(_root,1));
-		}
-
-		int i = 1;
-		std::cout << "---- gAVL tree ----" << std::endl;
-		std::cout << std::endl << i << ":    ";
-		
-		while (!q.empty()) {
-			std::shared_ptr<gAVLNode<T>> p = q.front().first;
-
-			if (i != q.front().second) {
-				i = q.front().second;
-				std::cout << std::endl << i << ":    ";
-			}
-
-			if (p->_parent != nullptr) {
-				std::cout << "( " << p->_data << ", " << p->_balance_factor << " ) [" << p->_parent->_data << "]     ";
-			} else {
-				std::cout << "( " << p->_data << ", " << p->_balance_factor << " ) [r]     ";
-			}
-
-			if (p->_left != nullptr) {
-				q.push(std::pair<std::shared_ptr<gAVLNode<T>>, int>(p->_left, i + 1));
-			}
-
-			if (p->_right != nullptr) {
-				q.push(std::pair<std::shared_ptr<gAVLNode<T>>, int>(p->_right, i + 1));
-			}
-
-			assert(p->_balance_factor <= 1 && p->_balance_factor >= -1);
-
-			if (p->_left == nullptr && p->_right != nullptr) {
-				assert(p->_balance_factor == 1);
-			} else if (p->_left != nullptr && p->_right == nullptr) {
-				assert(p->_balance_factor == -1);
-			}
-
-			q.pop();
-		}
-
-		std::cout << std::endl << std::endl;
-	}
-
-	template <typename T>
-	gAVL<T>::gAVL(std::function<bool(const T&, const T&)> less_than, std::function<bool(const T&, const T&)> equal): _less_than(less_than), _equal(equal) {
+	gAVL<T>::gAVL(std::function<int(const T&, const T&)> comparator): _comparator(comparator) {
 	}
 
 	template <typename T>
@@ -157,7 +104,7 @@ namespace bst {
 		std::shared_ptr<gAVLNode<T>> p = _root;
 
 		while (true) {
-			if (_less_than(node->_data, p->_data)) {
+			if (_comparator(node->_data, p->_data) < 0) {
 				if (p->_left != nullptr) {
 					p = p->_left;
 				} else {
@@ -165,7 +112,7 @@ namespace bst {
 					node->_parent = p;
 					break;
 				}
-			} else if (_equal(node->_data, p->_data)) {
+			} else if (_comparator(node->_data, p->_data) == 0) {
 				return;
 			} else {
 				if (p->_right != nullptr) {
@@ -180,17 +127,7 @@ namespace bst {
 
 		retrace_insert(node);
 
-		if (node->_left == nullptr && node->_right != nullptr) {
-			assert(node->_balance_factor == 1);
-		} else if (node->_left != nullptr && node->_right == nullptr) {
-			assert(node->_balance_factor == -1);
-		}
-
 		_size++;
-
-		if (equal(node->_data, 10.0)) {
-			_debug = node;
-		}
 
 		return;
 	}
@@ -225,7 +162,7 @@ namespace bst {
 
 				// Remove and potentially replace
 				if (q->_parent != nullptr) {
-					if (less_than(q->_data, q->_parent->_data)) {
+					if (_comparator(q->_data, q->_parent->_data) < 0) {
 						q->_parent->_left = rep;
 					} else {
 						q->_parent->_right = rep;
@@ -370,9 +307,9 @@ namespace bst {
 		std::shared_ptr<gAVLNode<T>> q = _root;
 
 		while (q != nullptr) {
-			if (_less_than(data, q->_data)) {
+			if (_comparator(data, q->_data) < 0) {
 				q = q->_left;
-			} else if (_equal(data, q->_data)) {
+			} else if (_comparator(data, q->_data) == 0) {
 				break;
 			} else {
 				q = q->_right;
@@ -396,8 +333,6 @@ namespace bst {
 
 		for (std::shared_ptr<gAVLNode<T>> X = Z->_parent; X != nullptr; X = Z->_parent) { // Loop (possibly up to the root)
 																						  // balance_factor(X) has to be updated:
-			assert(tmp->_parent != nullptr || tmp == _root);
-
 			if (Z == X->_right) { // The right subtree increases
 				if (X->_balance_factor > 0) { // X is right-heavy
 											  // ===> the temporary balance_factor(X) == +2
@@ -440,10 +375,6 @@ namespace bst {
 			// After a rotation adapt parent link:
 			// N is the new root of the rotated subtree
 			// Height does not change: Height(N) == old Height(X)
-			if (G == nullptr) {
-				assert(N->_left == _root || N->_right == _root || N == _root);
-			}
-
 			N->_parent = G;
 			if (G != nullptr) {
 				if (X == G->_left)
@@ -458,12 +389,6 @@ namespace bst {
 			// There is no fall thru, only break; or continue;
 		}
 		// Unless loop is left via break, the height of the total tree increases by 1.
-
-		assert(tmp->_parent != nullptr || tmp == _root);
-
-		if (tmp->_parent != nullptr) {
-			assert(tmp->_parent->_left == tmp || tmp->_parent->_right == tmp);
-		}
 	}
 
 	template <typename T>
@@ -536,8 +461,6 @@ namespace bst {
 
 	template <typename T>
 	std::shared_ptr<gAVLNode<T>> gAVL<T>::rotate_right(std::shared_ptr<gAVLNode<T>> X, std::shared_ptr<gAVLNode<T>> Z) {
-		assert(X->_left == Z);
-
 		// Z is by 2 higher than its sibling
 		std::shared_ptr<gAVLNode<T>> t32 = Z->_right; // Inner child of Z
 		X->_left = t32;
@@ -558,20 +481,11 @@ namespace bst {
 			Z->_balance_factor = 0;
 		}
 
-		assert(Z != nullptr && X != Z);
-		assert(Z->_right == X && X->_parent == Z);
-
-		if (t32 != nullptr) {
-			assert(t32->_parent == X && X->_left == t32);
-		}
-
 		return Z; // return new root of rotated subtree
 	}
 
 	template <typename T>
 	std::shared_ptr<gAVLNode<T>> gAVL<T>::rotate_left(std::shared_ptr<gAVLNode<T>> X, std::shared_ptr<gAVLNode<T>> Z) {
-		assert(X->_right == Z);
-
 		// Z is by 2 higher than its sibling
 		std::shared_ptr<gAVLNode<T>> t23 = Z->_left; // Inner child of Z
 		X->_right = t23;
@@ -592,20 +506,11 @@ namespace bst {
 			Z->_balance_factor = 0;
 		}
 
-		assert(Z != nullptr && Z != X);
-		assert(Z->_left == X && X->_parent == Z);
-
-		if (t23 != nullptr) {
-			assert(t23->_parent == X && X->_right == t23);
-		}
-
 		return Z; // return new root of rotated subtree
 	}
 
 	template <typename T>
 	std::shared_ptr<gAVLNode<T>> gAVL<T>::rotate_right_left(std::shared_ptr<gAVLNode<T>> X, std::shared_ptr<gAVLNode<T>> Z) {
-		assert(X->_right == Z && Z->_left != nullptr);
-
 		// Z is by 2 higher than its sibling
 		std::shared_ptr<gAVLNode<T>> Y = Z->_left; // Inner child of Z
 												   // Y is by 1 higher than sibling
@@ -644,25 +549,11 @@ namespace bst {
 		}
 		Y->_balance_factor = 0;
 
-		assert(Y != nullptr && X != Y && Z != Y);
-		assert(Y->_left == X && Y->_right == Z);
-		assert(X->_parent == Y && Z->_parent == Y);
-
-		if (t2 != nullptr) {
-			assert(t2->_parent == X && X->_right == t2);
-		}
-
-		if (t3 != nullptr) {
-			assert(t3->_parent == Z && Z->_left == t3);
-		}
-
 		return Y; // return new root of rotated subtree
 	}
 
 	template <typename T>
 	std::shared_ptr<gAVLNode<T>> gAVL<T>::rotate_left_right(std::shared_ptr<gAVLNode<T>> X, std::shared_ptr<gAVLNode<T>> Z) {
-		assert(X->_left == Z && Z->_right != nullptr);
-
 		// Z is by 2 higher than its sibling
 		std::shared_ptr<gAVLNode<T>> Y = Z->_right; // Inner child of Z
 												   // Y is by 1 higher than sibling
@@ -700,18 +591,6 @@ namespace bst {
 			}
 		}
 		Y->_balance_factor = 0;
-
-		assert(Y != nullptr && X != Y && Z != Y);
-		assert(Y->_left == Z && Y->_right == X);
-		assert(X->_parent == Y && Z->_parent == Y);
-
-		if (t2 != nullptr) {
-			assert(t2->_parent == X && X->_left == t2);
-		}
-
-		if (t3 != nullptr) {
-			assert(t3->_parent == Z && Z->_right == t3);
-		}
 
 		return Y; // return new root of rotated subtree
 	}
