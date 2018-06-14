@@ -215,6 +215,8 @@ namespace bst {
 			std::shared_ptr<gAVLNode<T>> rep = nullptr;
 
 			if (q->_right == nullptr || q->_left == nullptr) {
+				retrace_remove(q);
+
 				if (q->_right == nullptr) {
 					rep = q->_left;
 				} else {
@@ -236,11 +238,7 @@ namespace bst {
 				if (rep != nullptr) {
 					rep->_parent = q->_parent;	
 				}
-
-				if (q->_parent != nullptr) {
-					retrace_remove(q->_parent);
-				}
-
+				
 				break;
 
 			} else {
@@ -387,6 +385,7 @@ namespace bst {
 
 	/*
 		What follows is an adaptation of the pseudocode found at: https://en.wikipedia.org/wiki/AVL_tree
+		Or inverted psuedo-code (rotate_right and rotaie_left_right are mirrored copies since they were presumed to be self-evident given the other two on the wiki, so the comments might not make sense)
 	*/
 
 	template <typename T>

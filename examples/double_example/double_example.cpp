@@ -25,11 +25,9 @@ int main(void) {
 	std::uniform_real_distribution<> dis(0.0, 100.0);
 	int n = static_cast<int>(std::pow(2, k)) - 1;
 
-	//std::vector<double> u; // = { 30.0, 20.0, 25.0, 10, 5, 8, 2, 7, 12 };
-	std::vector<double> u = { 72.8802,   43.6026,   36.4165,   47.7681,   31.8813,   10.4903,   34.1303,   63.9099,  86.9684,   83.8471,   9.92424,   53.796,   98.1777,   68.4051,   63.4467 };
-	n = static_cast<int>(u.size());
+	std::vector<double> u; 
 	std::cout << "Random doubles in [0.0, 100.0]:" << std::endl;
-	/*for (int i = 0; i < n; ++i) {
+	for (int i = 0; i < n; ++i) {
 		double d = dis(gen);
 		tree.insert(d);
 		u.push_back(d);
@@ -37,11 +35,6 @@ int main(void) {
 		assert(tree.contains(d));
 
 		std::cout << d << "   ";
-	}*/
-	for (auto d : u) {
-		std::cout << d << "   ";
-		tree.insert(d);
-		assert(tree.contains(d));
 	}
 
 	std::cout << std::endl << std::endl;
@@ -59,8 +52,6 @@ int main(void) {
 	std::cout << " Bound Height: " << std::get<1>(tree.height_bounds()) << std::endl;
 	std::cout << "Actual Height: " << tree.height() << std::endl;
 	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
-
-	tree.debug_print();
 
 	assert(std::get<0>(height_bounds) <= height && height <= std::get<1>(height_bounds));
 
@@ -81,8 +72,6 @@ int main(void) {
 	std::cout << "   Max Height: " << std::get<1>(tree.height_bounds()) << std::endl;
 	std::cout << "Actual Height: " << tree.height() << std::endl;
 	std::cout << "         Size: " << tree.size() << std::endl << std::endl;
-
-	tree.debug_print();
 
 	system("PAUSE");
 
