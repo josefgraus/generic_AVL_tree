@@ -6,6 +6,7 @@
 #include <vector>
 #include <stack>
 #include <queue>
+#include <map>
 
 namespace bst {
 	template <typename T>
@@ -26,18 +27,30 @@ namespace bst {
 	template <typename T>
 	class gAVL {
 		public:
-		gAVL(std::function<int(const T&, const T&)> comparator);
-		~gAVL();
+			gAVL(std::function<int(const T&, const T&)> comparator);
+			~gAVL();
 
-		void insert(const T& data);				// Adds the data value to the tree (if it already exists in the tree, does nothing) [O(log(n)]
-		void remove(const T& data);				// Removes the data value from the tree (if it does not exist in the tree does nothing) [O(log(n))]
+			enum class Position : int {
+				Before,
+				After,
+				Equal
+			};
 
-		std::size_t size();						// Returns the number of items stored in the tree [O(1)]
-		int height();							// Returns the height of the tree (if you *must* know) [O(n)]
-		std::tuple<int, int> height_bounds();	// Returns the theoretical upper and lower bounds of the AVL tree (O(1))
-		bool contains(const T& data);			// Returns true if the data value is contained in the tree, false otherwise [O(log(n)]
+			void insert(const T& data);				// Adds the data value to the tree (if it already exists in the tree, does nothing) [O(log(n))]
+			void remove(const T& data);				// Removes the data value from the tree (if it does not exist in the tree does nothing) [O(log(n))]
 
-		std::vector<T> to_stl_vector();			// Returns the tree as an ordered vector, with the comparator "least" (negative to all others) value first, and the comparator "most" (positive to all others) last [O(n)]
+			std::size_t size();						// Returns the number of items stored in the tree [O(1)]
+			int height();							// Returns the height of the tree (if you *must* know) [O(n)]
+			std::tuple<int, int> height_bounds();	// Returns the theoretical upper and lower bounds of the AVL tree [O(1)]
+			bool contains(const T& data);			// Returns true if the data value is contained in the tree, false otherwise [O(log(n))]
+			bool parent(const T& data, T& ref);		// Returns the parent of data within the tree if it exists, otherwise returns false and doesn't alter ref [O(log(n))]
+			bool search_neighbors(const T& data, std::map<Position,T>& ref, std::function<bool(const T&)> condition = [](const T&) -> bool { return true; }); // Return the insertion neighborhood of data (what it would be adjacent to if you did insert it). --> Worst case O(n), typically far better
+			bool search_before(const T& data, T& ref, std::function<bool(const T&)> condition = [](const T&) -> bool { return true; });	// Worst case [O(n)], typically far better
+			bool search_after(const T& data, T& ref, std::function<bool(const T&)> condition = [](const T&) -> bool { return true; }); // Worst case [O(n)], typically far better
+
+			std::vector<T> to_stl_vector();			// Returns the tree as an ordered vector, with the comparator "least" (negative to all others) value first, and the comparator "most" (positive to all others) last [O(n)]
+			bool root(T& data);
+			bool search(const T& search_data, T& found_data);
 
 		protected:
 			std::shared_ptr<gAVLNode<T>> find(const T& data);
@@ -54,7 +67,7 @@ namespace bst {
 	};
 
 	template <typename T>
-	gAVL<T>::gAVL(std::function<int(const T&, const T&)> comparator): _comparator(comparator) {
+	gAVL<T>::gAVL(std::function<int(const T&, const T&)> comparator): _comparator(comparator), _root(nullptr), _size(0) {
 	}
 
 	template <typename T>
@@ -104,7 +117,9 @@ namespace bst {
 		std::shared_ptr<gAVLNode<T>> p = _root;
 
 		while (true) {
-			if (_comparator(node->_data, p->_data) < 0) {
+			int comp = _comparator(node->_data, p->_data);
+
+			if (comp < 0) {
 				if (p->_left != nullptr) {
 					p = p->_left;
 				} else {
@@ -112,7 +127,7 @@ namespace bst {
 					node->_parent = p;
 					break;
 				}
-			} else if (_comparator(node->_data, p->_data) == 0) {
+			} else if (comp == 0) {
 				return;
 			} else {
 				if (p->_right != nullptr) {
@@ -251,6 +266,7 @@ namespace bst {
 
 	template <typename T>
 	std::tuple<int, int> gAVL<T>::height_bounds() {
+		// Theoretical AVL tree height bounds, [lower, upper]
 		static const double phi = (1.0 + std::sqrt(5.0)) / 2.0;
 		static const double c   = 1.0 / std::log2(phi);
 		static const double b   = (c / 2.0) * std::log2(5) - 2.0;
@@ -259,7 +275,7 @@ namespace bst {
 
 		return std::tuple<int, int>(
 			static_cast<int>(std::floor(std::log2(n + 1.0))),
-			static_cast<int>(std::ceil(c * std::log2(n + 2) + b)) - 1
+			static_cast<int>(std::ceil(c * std::log2(n + 2.0) + b)) - 1
 		);
 	}
 
@@ -269,6 +285,281 @@ namespace bst {
 			return true;
 		}
 
+		return false;
+	}
+
+	template <typename T>
+	bool gAVL<T>::parent(const T& data, T& ref) {
+		std::shared_ptr<gAVLNode<T>> p = find(data);
+
+		if (p == nullptr || p->_parent == nullptr) {
+			return false;
+		}
+
+		ref = p->_parent->_data;
+
+		return true;
+	}
+
+	// Might seem redundant, but saves a constant factor if you plan on looking both before and after
+	template <typename T>
+	bool gAVL<T>::search_neighbors(const T& data, std::map<Position,T>& ref, std::function<bool(const T&)> condition) {
+		if (_root == nullptr) {
+			return false;
+		}
+
+		int s = static_cast<int>(ref.size());
+
+		// Get to spot where data is, or data should be
+		std::shared_ptr<gAVLNode<T>> q = _root;
+		std::stack<std::shared_ptr<gAVLNode<T>>> search_stack;
+
+		while (q != nullptr) {
+			int comp = _comparator(data, q->_data);
+
+			search_stack.push(q);
+
+			if (comp < 0) {
+				q = q->_left;
+			} else if (comp == 0) {
+				break;
+			} else {
+				q = q->_right;
+			}
+		}
+
+		if (search_stack.size() > 0) {
+			q = search_stack.top();
+		} else {
+			return false;
+		}
+
+		bool eq_comp = (_comparator(data, q->_data) == 0);
+
+		if (eq_comp) {
+			ref.insert(std::pair<Position, T>(Position::Equal, q->_data));
+		}
+
+		// look before
+		{
+			std::stack<std::shared_ptr<gAVLNode<T>>> s = search_stack;
+			bool down = true;
+
+			if (eq_comp) {
+				if (q->_left != nullptr) {
+					s.push(q->_left);
+				} else if (q->_parent != nullptr) {
+					s.pop();
+					down = false;
+				} else {
+					return false;
+				}
+			}
+
+			while (!s.empty()) {
+				std::shared_ptr<gAVLNode<T>> p = s.top();
+
+				if (down && p->_right != nullptr) {
+					s.push(p->_right);
+					continue;
+				}
+
+				down = false;
+				s.pop();
+
+				// test value
+				if (_comparator(p->_data, data) < 0 && condition(p->_data)) {
+					ref.insert(std::pair<Position, T>(Position::Before, p->_data));
+					break;
+				}
+
+				if (p->_left != nullptr) {
+					s.push(p->_left);
+					down = true;
+				}
+			}
+		}
+
+		// Look after
+		{
+			std::stack<std::shared_ptr<gAVLNode<T>>> s = search_stack;
+			bool down = true;
+
+			if (eq_comp) {
+				if (q->_right != nullptr) {
+					s.push(q->_right);
+				} else if (q->_parent != nullptr) {
+					s.pop();
+					down = false;
+				} else {
+					return false;
+				}
+			}
+
+			while (!s.empty()) {
+				std::shared_ptr<gAVLNode<T>> p = s.top();
+
+				if (down && p->_left != nullptr) {
+					s.push(p->_left);
+					continue;
+				}
+
+				down = false;
+				s.pop();
+
+				// test value
+				if (_comparator(p->_data, data) > 0 && condition(p->_data)) {
+					ref.insert(std::pair<Position, T>(Position::After, p->_data));
+					return true;
+				}
+
+				if (p->_right != nullptr) {
+					s.push(p->_right);
+					down = true;
+				}
+			}
+		}
+
+		return (ref.size() - s) > 0;
+	}
+
+	template <typename T>
+	bool gAVL<T>::search_before(const T& data, T& ref, std::function<bool(const T&)> condition) {
+		if (_root == nullptr) {
+			return false;
+		}
+
+		// Get to spot where data is, or data should be
+		std::shared_ptr<gAVLNode<T>> q = _root;
+		std::stack<std::shared_ptr<gAVLNode<T>>> s;
+
+		while (q != nullptr) {
+			int comp = _comparator(data, q->_data);
+
+			s.push(q);
+
+			if (comp < 0) {
+				q = q->_left;
+			} else if (comp == 0) {
+				break;
+			} else {
+				q = q->_right;
+			}
+		}
+
+		if (s.size() > 0) {
+			q = s.top();
+		} else {
+			return false;
+		}
+
+		// look before
+		bool down = true;
+
+		if (_comparator(data, q->_data) == 0) {
+			if (q->_left != nullptr) {
+				s.push(q->_left);
+			} else if (q->_parent != nullptr) {
+				s.pop();
+				down = false;
+			} else {
+				return false;
+			}
+		}
+
+		while (!s.empty()) {
+			std::shared_ptr<gAVLNode<T>> p = s.top();
+
+			if (down && p->_right != nullptr) {
+				s.push(p->_right);
+				continue;
+			}
+
+			down = false;
+			s.pop();
+
+			// test value
+			if (_comparator(p->_data, data) < 0 && condition(p->_data)) {
+				ref = p->_data;
+				return true;
+			}
+
+			if (p->_left != nullptr) {
+				s.push(p->_left);
+				down = true;
+			}
+		}
+
+		return false;
+	}
+
+	template <typename T>
+	bool gAVL<T>::search_after(const T& data, T& ref, std::function<bool(const T&)> condition) {
+		if (_root == nullptr) {
+			return false;
+		}
+
+		// Get to spot where data is, or data should be
+		std::shared_ptr<gAVLNode<T>> q = _root;
+		std::stack<std::shared_ptr<gAVLNode<T>>> s;
+
+		while (q != nullptr) {
+			int comp = _comparator(data, q->_data);
+
+			s.push(q);
+
+			if (comp < 0) {
+				q = q->_left;
+			} else if (comp == 0) {
+				break;
+			} else {
+				q = q->_right;
+			}
+		}
+
+		if (s.size() > 0) {
+			q = s.top();
+		} else {
+			return false;
+		}
+
+		// look after
+		bool down = true;
+
+		if (_comparator(data, q->_data) == 0) {
+			if (q->_right != nullptr) {
+				s.push(q->_right);
+			} else if (q->_parent != nullptr) {
+				s.pop();
+				down = false;
+			} else {
+				return false;
+			}
+		}
+
+		while (!s.empty()) {
+			std::shared_ptr<gAVLNode<T>> p = s.top();
+
+			if (down && p->_left != nullptr) {
+				s.push(p->_left);
+				continue;
+			}
+
+			down = false;
+			s.pop();
+
+			// test value
+			if (_comparator(p->_data, data) > 0 && condition(p->_data)) {
+				ref = p->_data;
+				return true;
+			}
+
+			if (p->_right != nullptr) {
+				s.push(p->_right);
+				down = true;
+			}
+		}
+		
 		return false;
 	}
 
@@ -306,13 +597,39 @@ namespace bst {
 	}
 
 	template <typename T>
+	bool gAVL<T>::root(T& data) {
+		if (_root != nullptr) {
+			data = _root->_data;
+
+			return true;
+		}
+
+		return false;
+	}
+
+	template <typename T>
+	bool gAVL<T>::search(const T& search_data, T& found_data) {
+		auto node = find(search_data);
+
+		if (node != nullptr && _comparator(search_data, node->_data) == 0) {
+			found_data = node->_data;
+
+			return true;
+		}
+
+		return false;
+	}
+
+	template <typename T>
 	std::shared_ptr<gAVLNode<T>> gAVL<T>::find(const T& data) {
 		std::shared_ptr<gAVLNode<T>> q = _root;
 
 		while (q != nullptr) {
-			if (_comparator(data, q->_data) < 0) {
+			int comp = _comparator(data, q->_data);
+
+			if (comp < 0) {
 				q = q->_left;
-			} else if (_comparator(data, q->_data) == 0) {
+			} else if (comp == 0) {
 				break;
 			} else {
 				q = q->_right;
@@ -335,20 +652,20 @@ namespace bst {
 		std::shared_ptr<gAVLNode<T>> G = nullptr;
 
 		for (std::shared_ptr<gAVLNode<T>> X = Z->_parent; X != nullptr; X = Z->_parent) { // Loop (possibly up to the root)
-																						  // balance_factor(X) has to be updated:
+																						// balance_factor(X) has to be updated:
 			if (Z == X->_right) { // The right subtree increases
 				if (X->_balance_factor > 0) { // X is right-heavy
-											  // ===> the temporary balance_factor(X) == +2
-											  // ===> rebalancing is required.
+											// ===> the temporary balance_factor(X) == +2
+											// ===> rebalancing is required.
 					G = X->_parent; // Save parent of X around rotations
 					if (Z->_balance_factor < 0)      // Right Left Case     (see figure 5)
 						N = rotate_right_left(X, Z); // Double rotation: Right(Z) then Left(X)
 					else                           // Right Right Case    (see figure 4)
 						N = rotate_left(X, Z);     // Single rotation Left(X)
-												   // After rotation adapt parent link
+												// After rotation adapt parent link
 				} else {
 					if (X->_balance_factor < 0) {
-						X->_balance_factor = 0; // Z’s height increase is absorbed at X.
+						X->_balance_factor = 0; // Zï¿½s height increase is absorbed at X.
 						break; // Leave the loop
 					}
 					X->_balance_factor = +1;
@@ -357,17 +674,17 @@ namespace bst {
 				}
 			} else { // Z == left_child(X): the left subtree increases
 				if (X->_balance_factor < 0) { // X is left-heavy
-											  // ===> the temporary balance_factor(X) == –2
-											  // ===> rebalancing is required.
+											// ===> the temporary balance_factor(X) == ï¿½2
+											// ===> rebalancing is required.
 					G = X->_parent; // Save parent of X around rotations
 					if (Z->_balance_factor > 0)      // Left Right Case
 						N = rotate_left_right(X, Z); // Double rotation: Left(Z) then Right(X)
 					else                           // Left Left Case
 						N = rotate_right(X, Z);    // Single rotation Right(X)
-												   // After rotation adapt parent link
+												// After rotation adapt parent link
 				} else {
 					if (X->_balance_factor > 0) {
-						X->_balance_factor = 0; // Z’s height increase is absorbed at X.
+						X->_balance_factor = 0; // Zï¿½s height increase is absorbed at X.
 						break; // Leave the loop
 					}
 					X->_balance_factor = -1;
@@ -402,7 +719,7 @@ namespace bst {
 
 		for (std::shared_ptr<gAVLNode<T>> X = N->_parent; X != nullptr; X = G) { // Loop (possibly up to the root)
 			G = X->_parent; // Save parent of X around rotations
-						   // BalanceFactor(X) has not yet been updated!
+						// BalanceFactor(X) has not yet been updated!
 			if (N == X->_left) { // the left subtree decreases
 				if (X->_balance_factor > 0) { // X is right-heavy
 											// ===> the temporary BalanceFactor(X) == +2
@@ -413,10 +730,10 @@ namespace bst {
 						N = rotate_right_left(X, Z); // Double rotation: Right(Z) then Left(X)
 					else                           // Right Right Case    (see figure 4)
 						N = rotate_left(X, Z);     // Single rotation Left(X)
-												   // After rotation adapt parent link
+												// After rotation adapt parent link
 				} else {
 					if (X->_balance_factor == 0) {
-						X->_balance_factor = +1; // N’s height decrease is absorbed at X.
+						X->_balance_factor = +1; // Nï¿½s height decrease is absorbed at X.
 						break; // Leave the loop
 					}
 					N = X;
@@ -425,7 +742,7 @@ namespace bst {
 				}
 			} else { // (N == right_child(X)): The right subtree decreases
 				if (X->_balance_factor < 0) { // X is left-heavy
-											// ===> the temporary BalanceFactor(X) == –2
+											// ===> the temporary BalanceFactor(X) == ï¿½2
 											// ===> rebalancing is required.
 					Z = X->_left; // Sibling of N (higher by 2)
 					b = Z->_balance_factor;
@@ -433,10 +750,10 @@ namespace bst {
 						N = rotate_left_right(X, Z); // Double rotation: Left(Z) then Right(X)
 					else                        // Left Left Case
 						N = rotate_right(X, Z);    // Single rotation Right(X)
-												   // After rotation adapt parent link
+												// After rotation adapt parent link
 				} else {
 					if (X->_balance_factor == 0) {
-						X->_balance_factor = -1; // N’s height decrease is absorbed at X.
+						X->_balance_factor = -1; // Nï¿½s height decrease is absorbed at X.
 						break; // Leave the loop
 					}
 					N = X;
@@ -516,7 +833,7 @@ namespace bst {
 	std::shared_ptr<gAVLNode<T>> gAVL<T>::rotate_right_left(std::shared_ptr<gAVLNode<T>> X, std::shared_ptr<gAVLNode<T>> Z) {
 		// Z is by 2 higher than its sibling
 		std::shared_ptr<gAVLNode<T>> Y = Z->_left; // Inner child of Z
-												   // Y is by 1 higher than sibling
+												// Y is by 1 higher than sibling
 		std::shared_ptr<gAVLNode<T>> t3 = Y->_right;
 		Z->_left = t3;
 
@@ -545,7 +862,7 @@ namespace bst {
 				X->_balance_factor = 0;
 				Z->_balance_factor = 0;
 			} else { // 3rd case happens with insertion or deletion:
-					 // t2 was higher
+					// t2 was higher
 				X->_balance_factor = 0;
 				Z->_balance_factor = +1;  // t4 now higher
 			}
@@ -559,7 +876,7 @@ namespace bst {
 	std::shared_ptr<gAVLNode<T>> gAVL<T>::rotate_left_right(std::shared_ptr<gAVLNode<T>> X, std::shared_ptr<gAVLNode<T>> Z) {
 		// Z is by 2 higher than its sibling
 		std::shared_ptr<gAVLNode<T>> Y = Z->_right; // Inner child of Z
-												   // Y is by 1 higher than sibling
+												// Y is by 1 higher than sibling
 		std::shared_ptr<gAVLNode<T>> t3 = Y->_left;
 		Z->_right = t3;
 

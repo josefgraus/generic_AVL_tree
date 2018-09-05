@@ -14,15 +14,27 @@ namespace bst {
 			gAVL(std::function<int(const T&, const T&)> comparator);
 			~gAVL();
 
-			void insert(const T& data);				// Adds the data value to the tree (if it already exists in the tree, does nothing) [O(log(n)]
+			enum class Position : int {
+				Before,
+				After,
+				Equal
+			};
+
+			void insert(const T& data);				// Adds the data value to the tree (if it already exists in the tree, does nothing) [O(log(n))]
 			void remove(const T& data);				// Removes the data value from the tree (if it does not exist in the tree does nothing) [O(log(n))]
-			
+
 			std::size_t size();						// Returns the number of items stored in the tree [O(1)]
 			int height();							// Returns the height of the tree (if you *must* know) [O(n)]
-			std::tuple<int, int> height_bounds();	// Returns the theoretical upper and lower bounds of the AVL tree (O(1))
-			bool contains(const T& data);			// Returns true if the data value is contained in the tree, false otherwise [O(log(n)]
+			std::tuple<int, int> height_bounds();	// Returns the theoretical upper and lower bounds of the AVL tree [O(1)]
+			bool contains(const T& data);			// Returns true if the data value is contained in the tree, false otherwise [O(log(n))]
+			bool parent(const T& data, T& ref);		// Returns the parent of data within the tree if it exists, otherwise returns false and doesn't alter ref [O(log(n))]
+			bool search_neighbors(const T& data, std::map<Position,T>& ref, std::function<bool(const T&)> condition = [](const T&) -> bool { return true; }); // Return the insertion neighborhood of data (what it would be adjacent to if you did insert it). --> Worst case O(n), typically far better
+			bool search_before(const T& data, T& ref, std::function<bool(const T&)> condition = [](const T&) -> bool { return true; });	// Worst case [O(n)], typically far better
+			bool search_after(const T& data, T& ref, std::function<bool(const T&)> condition = [](const T&) -> bool { return true; }); // Worst case [O(n)], typically far better
 
 			std::vector<T> to_stl_vector();			// Returns the tree as an ordered vector, with the comparator "least" (negative to all others) value first, and the comparator "most" (positive to all others) last [O(n)]
+			bool root(T& data);
+			bool search(const T& search_data, T& found_data);
 
 		protected:
 			// None of your business...
@@ -31,7 +43,7 @@ namespace bst {
 }
 ```
 
-The only necessary component that you must supply is an `int` returning **comparator function**, taking `const` references `a`, and `b`. This function allows you to establish an ordered relationship between instanced objects you wish to store in the tree. Given objects `a` and `b`, if they are equal, then the comparator returns `0`. If `a` should come before `b`, then the comparator should return `1` (or any positive `int`). If `a` should come after `b`, then the comparator should return `-1` (or any negative `int`).
+The only necessary component that you must supply is an `int` returning **comparator function**, taking `const` references `a`, and `b`. This function allows you to establish an ordered relationship between instanced objects you wish to store in the tree. Given objects `a` and `b`, if they are equal, then the comparator returns `0`. If `a` should come before `b`, then the comparator should return `-1` (or any negative `int`). If `a` should come after `b`, then the comparator should return `1` (or any positive `int`).
 
 See `examples/double_example/double_example.cpp` for an example of **gAVL** over an arbitary number of randomly generated doubles in the interval `[0.0, 100.0]`. Usage with any other datatype should be identical besides the definition of the comparator function.
 
