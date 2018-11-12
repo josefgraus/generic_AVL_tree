@@ -36,8 +36,8 @@ namespace bst {
 				Equal
 			};
 
-			void insert(const T& data);				// Adds the data value to the tree (if it already exists in the tree, does nothing) [O(log(n))]
-			void remove(const T& data);				// Removes the data value from the tree (if it does not exist in the tree does nothing) [O(log(n))]
+			bool insert(const T& data);				// Adds the data value to the tree (if it already exists in the tree, does nothing) [O(log(n))]
+			bool remove(const T& data);				// Removes the data value from the tree (if it does not exist in the tree does nothing) [O(log(n))]
 
 			std::size_t size();						// Returns the number of items stored in the tree [O(1)]
 			int height();							// Returns the height of the tree (if you *must* know) [O(n)]
@@ -103,7 +103,7 @@ namespace bst {
 	}
 
 	template <typename T>
-	void gAVL<T>::insert(const T& data) {
+	bool gAVL<T>::insert(const T& data) {
 		std::shared_ptr<gAVLNode<T>> node = std::make_shared<gAVLNode<T>>();
 		node->_data = data;
 		node->_balance_factor = 0;
@@ -111,7 +111,7 @@ namespace bst {
 		if (_root == nullptr) {
 			_root = node;
 			_size++;
-			return;
+			return true;
 		}
 
 		std::shared_ptr<gAVLNode<T>> p = _root;
@@ -128,7 +128,7 @@ namespace bst {
 					break;
 				}
 			} else if (comp == 0) {
-				return;
+				return false;
 			} else {
 				if (p->_right != nullptr) {
 					p = p->_right;
@@ -144,13 +144,13 @@ namespace bst {
 
 		_size++;
 
-		return;
+		return true;
 	}
 
 	template <typename T>
-	void gAVL<T>::remove(const T& data) {
+	bool gAVL<T>::remove(const T& data) {
 		if (_root == nullptr) {
-			return;
+			return false;
 		}
 
 		std::stack<std::pair<std::shared_ptr<gAVLNode<T>>, T>> s;
@@ -161,7 +161,7 @@ namespace bst {
 			std::shared_ptr<gAVLNode<T>> q = find(rdata);
 
 			if (q == nullptr) {
-				return;
+				return false;
 			}
 
 			std::shared_ptr<gAVLNode<T>> rep = nullptr;
@@ -218,6 +218,8 @@ namespace bst {
 		}
 
 		_size--;
+
+		return true;
 	}
 
 	template <typename T> 
